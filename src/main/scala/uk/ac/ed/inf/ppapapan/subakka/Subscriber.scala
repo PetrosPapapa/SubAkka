@@ -40,9 +40,11 @@ class SubscriberActor[Event](subscriber: Subscriber[Event])(implicit tag: ClassT
 
   def subscriberBehaviour: Receive = {
     case Subscriber.SubAndForgetTo(publisher) => {
+      log.debug(s"SubAndFogetting to: $publisher")
       publisher ! Publisher.SubAndForget(Some(sender))
     }
     case Subscriber.SubscribeTo(name,publisher) => {
+      log.debug(s"Subscribing to: $publisher")
       publisher ! Publisher.Subscribe(name,Some(sender))
     }
     case Publisher.StreamInitAndForget(ack) => {

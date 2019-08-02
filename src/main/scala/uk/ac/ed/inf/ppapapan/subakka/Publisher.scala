@@ -22,7 +22,7 @@ trait Publisher[Event] extends Actor with ActorLogging {
   def isFinalEvent(e: Event): Boolean = false
 
   def publish(evt: Event) = {
-    log.debug("Publishing Event: {}", evt)
+    log.debug("Publishing Event: {}", evt.getClass().toString())
     queue.offer(evt)
     if (isFinalEvent(evt)) queue.complete()
   }
