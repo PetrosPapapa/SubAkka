@@ -57,7 +57,7 @@ class MockSubscriber extends Subscriber[MockEvent] {
 object MockSubscriber {
   def sub(publisher: ActorRef)(implicit system: ActorSystem): Future[Int] = {
     val s = new MockSubscriber()
-    Await.result(s.subAndForget(publisher),3.seconds)
+    Await.result(s.subAndForgetTo(publisher),3.seconds)
     s.future
   }
 

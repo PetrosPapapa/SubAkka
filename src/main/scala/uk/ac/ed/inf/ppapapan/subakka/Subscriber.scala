@@ -16,22 +16,23 @@ trait Subscriber[Event] {
   def onDone(publisher: ActorRef, subscriber: ActorRef): Unit = ()
   def onFail(e: Throwable, publisher: ActorRef, subscriber: ActorRef): Unit = ()
 
-  def subAndForget(
+  def subAndForgetTo(
     publisher: ActorRef,
     name: Option[String] = None,
     timeout: FiniteDuration = 3.seconds)
-    (implicit system: ActorSystem,  tag: ClassTag[Event]): Future[Any] = {
+    (implicit system: ActorSystem, tag: ClassTag[Event]): Future[Any] = {
     implicit val tOut = Timeout(timeout)
     Subscriber.actor(this,name) ? Subscriber.SubAndForgetTo(publisher)
   }
 
-  def subscribe(
+  def subscribeTo(
     publisher: ActorRef,
-    name: String,
+    name: Option[String] = None,
     timeout: FiniteDuration = 3.seconds)
-    (implicit system: ActorSystem, tag: ClassTag[Event]): Future[KillSwitch] = {
+    (implicit system: ActorSystem, tag: ClassTag[Event]): Future[Publisher.StreamInit] = {
     implicit val tOut = Timeout(timeout)
-    (Subscriber.actor(this,Some(name)) ? Subscriber.SubscribeTo(name,publisher)).mapTo[KillSwitch]
+    val switchName = name.getOrElse("SubscriberKillSwitch")
+    (Subscriber.actor(this,name) ? Subscriber.SubscribeTo(switchName,publisher)).mapTo[Publisher.StreamInit]
   }
 }
 
