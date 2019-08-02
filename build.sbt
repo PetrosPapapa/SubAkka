@@ -13,5 +13,6 @@ lazy val root = (project in file("."))
     libraryDependencies += akkaStream,
     libraryDependencies += scalaTest % Test,
     libraryDependencies += scalaCheck % Test,
-    libraryDependencies += akkaTest % Test
+    libraryDependencies += akkaTest % Test,
+    publishArtifact in Test := true
   )
