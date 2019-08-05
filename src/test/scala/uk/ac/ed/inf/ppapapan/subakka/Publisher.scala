@@ -15,7 +15,6 @@ import akka.util.Timeout
 class PublisherTests extends TestKit(ActorSystem("PublisherTests", ConfigFactory.parseString(MockPublisher.config))) with
     WordSpecLike with Matchers with BeforeAndAfterAll with ImplicitSender {
 
-  //implicit val timeout:FiniteDuration = 10.seconds
   override def beforeAll:Unit = {
     system.eventStream.setLogLevel(Logging.DebugLevel)
   }

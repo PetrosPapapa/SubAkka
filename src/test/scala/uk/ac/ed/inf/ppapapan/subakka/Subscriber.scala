@@ -31,11 +31,13 @@ class SubscriberTests extends TestKit(ActorSystem("SubscriberTests", ConfigFacto
     "publish events to 3 observers" in {
       val p = MockPublisher.actor(system,ME1,ME1,MEX)
 
-      val f1 = MockSubscriber.sub(p)._2
-      val f2 = MockSubscriber.sub(p)._2
-      val f3 = MockSubscriber.sub(p)._2
+      val f1 = MockSubscriber.sub(p,self)
+      val f2 = MockSubscriber.sub(p,self)
+      val f3 = MockSubscriber.sub(p,self)
 
-      //Thread.sleep(1000)
+      for (i <- 1 to 3) {
+        expectMsg(70.seconds, SOK)
+      }
       p ! MockPublisher.Publish
 
       Await.result(f1, 1.seconds) should be (3)
@@ -44,39 +46,32 @@ class SubscriberTests extends TestKit(ActorSystem("SubscriberTests", ConfigFacto
     }
 
     "publish events to many observers" in {
+      val n = 9
+
       val probe = TestProbe()
 
       val p = MockPublisher.actor(system,ME3,ME1,ME1,ME1,ME1,ME1,ME1,ME1,ME1,MEX)
-      val n = 90000
 
       val q = scala.collection.mutable.Queue[Future[Int]]()
-      val aq = scala.collection.mutable.Queue[ActorRef]()
 
       for (i <- 1 to n) {
-        val (a,f) = MockSubscriber.sub(p)
-        q += f
-        aq += a
+        q += MockSubscriber.sub(p,self)
       }
 
+      for (i <- 1 to n) {
+        expectMsg(70.seconds, SOK)
+      }
       p ! MockPublisher.Publish
 
-      //Thread.sleep(5000)
-      //println("Waking up")
-      /*
-      for (i <- 1 to n) {
-        println(s"> $i ${aq.dequeue()}")
-        val r = Await.ready(q.dequeue(), 1.minute)
-        r.value should be (Some(Success(10)))
-      }
-       */
       q.map { f => f.onComplete { t => {
         t.getOrElse(0) should be (10)
         probe.ref ! OK
       }
       }(system.dispatcher) }
 
-      for (1 <- 1 to n)
+      for (i <- 1 to n) {
         probe.expectMsg(50.seconds, OK)
+      }
     }
   }
 }
@@ -93,14 +88,17 @@ class MockSubscriber extends Subscriber[MockEvent] {
 }
 
 object MockSubscriber {
-  def sub(publisher: ActorRef)(implicit system: ActorSystem): (ActorRef,Future[Int]) = {
+  def sub(publisher: ActorRef, ack: ActorRef)(implicit system: ActorSystem): Future[Int] = {
     val s = new MockSubscriber()
     implicit val tOut = Timeout(1.minute)
-    val a = Subscriber.actor(s,None)
-    Await.result(a ? Subscriber.SubAndForgetTo(publisher),1.minute)
-    println(s"[$a] Subscribed!")
+    val a = system.actorOf(Props(new SubscriberActor(s)))
+    val f = a ? Subscriber.SubAndForgetTo(publisher)
+    f.onComplete { _ => 
+      println(s"[$a] Subscribed!")
+      ack ! SOK
+    }(system.dispatcher)
 //    Await.result(s.subAndForgetTo(publisher,None,30.seconds),1.minute)
-    (a,s.future)
+      s.future
   }
 
   def probe(publisher: ActorRef)(implicit system: ActorSystem) = {
@@ -115,3 +113,4 @@ object MockSubscriber {
 }
 
 case object OK
+case object SOK
