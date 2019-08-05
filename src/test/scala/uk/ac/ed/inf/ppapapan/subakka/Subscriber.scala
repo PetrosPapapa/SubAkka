@@ -14,10 +14,9 @@ import scala.concurrent.ExecutionContext
 import akka.util.Timeout
 import scala.util.Success
 
-class SubscriberTests extends TestKit(ActorSystem("SubscriberTests", ConfigFactory.parseString(MockPublisher.config))) with
+class SubscriberTests extends TestKit(ActorSystem("SubscriberTests")) with
     WordSpecLike with Matchers with BeforeAndAfterAll with ImplicitSender {
 
-  //implicit val timeout:FiniteDuration = 10.seconds
   override def beforeAll:Unit = {
     system.eventStream.setLogLevel(Logging.DebugLevel)
   }
@@ -29,16 +28,16 @@ class SubscriberTests extends TestKit(ActorSystem("SubscriberTests", ConfigFacto
   "The Subscriber" must {
 
     "publish events to 3 observers" in {
-      val p = MockPublisher.actor(system,ME1,ME1,MEX)
+      val p = system.actorOf(Props(new MockPublisher(E1,E2,EX)))
 
       val f1 = MockSubscriber.sub(p,self)
       val f2 = MockSubscriber.sub(p,self)
       val f3 = MockSubscriber.sub(p,self)
 
       for (i <- 1 to 3) {
-        expectMsg(70.seconds, SOK)
+        expectMsgType[Publisher.StreamInit](70.seconds)
       }
-      p ! MockPublisher.Publish
+      p ! MockPublish
 
       Await.result(f1, 1.seconds) should be (3)
       Await.result(f2, 1.seconds) should be (3)
@@ -46,11 +45,9 @@ class SubscriberTests extends TestKit(ActorSystem("SubscriberTests", ConfigFacto
     }
 
     "publish events to many observers" in {
-      val n = 9
+      val n = 90000
 
-      val probe = TestProbe()
-
-      val p = MockPublisher.actor(system,ME3,ME1,ME1,ME1,ME1,ME1,ME1,ME1,ME1,MEX)
+      val p = system.actorOf(Props(new MockPublisher(E1,E2,E3,E4,E5,EX)))
 
       val q = scala.collection.mutable.Queue[Future[Int]]()
 
@@ -59,30 +56,22 @@ class SubscriberTests extends TestKit(ActorSystem("SubscriberTests", ConfigFacto
       }
 
       for (i <- 1 to n) {
-        expectMsg(70.seconds, SOK)
+        expectMsgType[Publisher.StreamInit](70.seconds)
       }
-      p ! MockPublisher.Publish
+      p ! MockPublish
 
-      q.map { f => f.onComplete { t => {
-        t.getOrElse(0) should be (10)
-        probe.ref ! OK
-      }
-      }(system.dispatcher) }
-
-      for (i <- 1 to n) {
-        probe.expectMsg(50.seconds, OK)
-      }
+      q.map { f => Await.result(f, 10.seconds) should be (6) }
     }
   }
 }
 
-class MockSubscriber extends Subscriber[MockEvent] {
+class MockSubscriber extends Subscriber {
   var count = 0
   val promise = Promise[Int]()
   def future = promise.future
 
   override def onInit(publisher: ActorRef): Unit = count = 0
-  override def onEvent(event: MockEvent): Unit = count += 1
+  override def onEvent(event: Event): Unit = count += 1
   override def onDone(publisher: ActorRef, subscriber: ActorRef): Unit = promise.success(count)
   override def onFail(e: Throwable, publisher: ActorRef, subscriber: ActorRef): Unit = promise.failure(e) 
 }
@@ -92,25 +81,11 @@ object MockSubscriber {
     val s = new MockSubscriber()
     implicit val tOut = Timeout(1.minute)
     val a = system.actorOf(Props(new SubscriberActor(s)))
-    val f = a ? Subscriber.SubAndForgetTo(publisher)
-    f.onComplete { _ => 
-      println(s"[$a] Subscribed!")
-      ack ! SOK
-    }(system.dispatcher)
-//    Await.result(s.subAndForgetTo(publisher,None,30.seconds),1.minute)
-      s.future
-  }
 
-  def probe(publisher: ActorRef)(implicit system: ActorSystem) = {
-    val probe = TestProbe()
+    val f = publisher ! Publisher.Subscribe(a, Some(ack))
 
-    probe.send(publisher, Publisher.SubAndForget(None))
-    probe.expectMsgType[Publisher.StreamInitAndForget]
-    probe.reply(Publisher.StreamAck)
-    println("Probe ready!")
-    probe
+    s.future
   }
 }
 
 case object OK
-case object SOK
