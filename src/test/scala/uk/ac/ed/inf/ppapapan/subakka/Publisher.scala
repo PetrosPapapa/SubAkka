@@ -73,7 +73,7 @@ class PublisherTests extends TestKit(ActorSystem("PublisherTests", ConfigFactory
     }
 
     "publish events to 2 probes" in {
-      val p = MockPublisher.actor(system,ME1,ME2)
+      val p = MockPublisher.actor(system,ME1,MEX)
 
       val probe1 = MockSubscriber.probe(p)
       val probe2 = MockSubscriber.probe(p)
@@ -82,14 +82,14 @@ class PublisherTests extends TestKit(ActorSystem("PublisherTests", ConfigFactory
 
       probe1.expectMsg(ME1)
       probe1.reply(Publisher.StreamAck)
-      probe1.expectMsg(ME2)
+      probe1.expectMsg(MEX)
       probe1.reply(Publisher.StreamAck)
       probe1.expectMsg(Publisher.StreamDone)
       probe1.expectNoMessage
 
       probe2.expectMsg(ME1)
       probe2.reply(Publisher.StreamAck)
-      probe2.expectMsg(ME2)
+      probe2.expectMsg(MEX)
       probe2.reply(Publisher.StreamAck)
       probe2.expectMsg(Publisher.StreamDone)
       probe2.expectNoMessage
@@ -109,7 +109,7 @@ class MockPublisher(events: MockEvent*) extends Publisher[MockEvent] {
   }
 
   override def isFinalEvent(e: MockEvent): Boolean = e match {
-    case ME2 => true
+    case MEX => true
     case _ => false
   }
 }
@@ -122,17 +122,17 @@ object MockPublisher {
 
   val config = """
 akka {
-    stdout-loglevel = "DEBUG"
-    loglevel = "DEBUG"    
+    stdout-loglevel = "OFF"
+    loglevel = "OFF"    
     actor {
       debug {
-        receive = on
-        unhandled = on
+        receive = off
+        unhandled = off
       }
     }
 }
     """
-
+                 
 }
 
 /*
@@ -142,5 +142,9 @@ akka {
  */
 
 sealed trait MockEvent
+case object MEX extends MockEvent
 case object ME1 extends MockEvent
 case object ME2 extends MockEvent
+case object ME3 extends MockEvent
+case object ME4 extends MockEvent
+case object ME5 extends MockEvent
