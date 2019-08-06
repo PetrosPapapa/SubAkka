@@ -32,7 +32,9 @@ trait HashSetPublisher[Event] extends Publisher[Event] {
     case HashSetPublisher.Unsubscribe(actor) => unsubscribe(actor)
   }
 
-  override def receive = LoggingReceive { unsubBehaviour orElse publisherBehaviour }
+  override def publisherBehaviour: Receive = unsubBehaviour orElse super.publisherBehaviour
+
+  override def receive = LoggingReceive { publisherBehaviour }
 }
 
 object HashSetPublisher {
