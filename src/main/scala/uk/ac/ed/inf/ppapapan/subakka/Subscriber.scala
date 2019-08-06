@@ -3,7 +3,6 @@ package uk.ac.ed.inf.ppapapan.subakka
 import akka.actor.{ Actor, ActorLogging, ActorRef, ActorSystem, Props }
 import akka.event.LoggingReceive
 import akka.pattern.ask
-import akka.stream.KillSwitch
 import akka.util.Timeout
 import scala.concurrent.Future
 import scala.concurrent.duration._
@@ -11,7 +10,7 @@ import scala.reflect.ClassTag
 
 trait Subscriber[Event] {
   def onInit(publisher: ActorRef): Unit = ()
-  def onInit(publisher: ActorRef, k: KillSwitch): Unit = onInit(publisher)
+  def onInit(publisher: ActorRef, switch: SubscriptionSwitch): Unit = onInit(publisher)
   def onEvent(event: Event): Unit = ()
   def onDone(publisher: ActorRef, subscriber: ActorRef): Unit = ()
   def onFail(e: Throwable, publisher: ActorRef, subscriber: ActorRef): Unit = ()

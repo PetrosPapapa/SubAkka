@@ -46,7 +46,7 @@ class SubscriberTests extends TestKit(ActorSystem("SubscriberTests", ConfigFacto
     }
 
     "publish events to many observers" in {
-      val n = 9
+      val n = 9000
 
       val probe = TestProbe()
 
