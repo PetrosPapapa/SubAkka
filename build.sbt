@@ -1,6 +1,6 @@
 import Dependencies._
 
-ThisBuild / scalaVersion     := "2.12.10"
+ThisBuild / scalaVersion     := "2.12.12"
 ThisBuild / version          := "0.1-SNAPSHOT"
 ThisBuild / organization     := "uk.ac.ed.inf"
 
@@ -16,3 +16,4 @@ lazy val root = (project in file("."))
     libraryDependencies += akkaTest % Test,
     publishArtifact in Test := true
   )
+
