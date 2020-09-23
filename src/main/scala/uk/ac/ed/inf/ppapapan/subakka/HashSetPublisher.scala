@@ -21,7 +21,7 @@ trait HashSetPublisher[Event] extends Publisher[Event] {
     switch
   }
 
-  override def stop(): Unit = {
+  override def stopStream(): Unit = {
     subscribers map (_ ! Publisher.StreamDone)
     subscribers.clear()
   }

@@ -20,7 +20,7 @@ trait StreamPublisher[Event] extends Publisher[Event] {
   }
 
   override def doPublish(evt: Event) = queue.offer(evt)
-  override def stop() = queue.complete()
+  override def stopStream() = queue.complete()
 
   override def subAndForget(actor: ActorRef, ack: ActorRef): Unit =
     source.runWith(

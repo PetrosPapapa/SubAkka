@@ -9,7 +9,7 @@ trait Publisher[Event] extends Actor with ActorLogging {
 
   def doPublish(evt: Event): Unit
 
-  def stop(): Unit
+  def stopStream(): Unit
 
   def subAndForget(actor: ActorRef, ack: ActorRef): Unit
 
@@ -19,7 +19,7 @@ trait Publisher[Event] extends Actor with ActorLogging {
   def publish(evt: Event): Unit = {
     log.debug("Publishing Event: {}", evt.getClass().toString())
     doPublish(evt)
-    if (isFinalEvent(evt)) stop()
+    if (isFinalEvent(evt)) stopStream()
   }
 
   def publisherBehaviour: Receive = {
